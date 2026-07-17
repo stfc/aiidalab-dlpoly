@@ -127,23 +127,27 @@ class TestValidateModel:
     """Tests for DLPOLYProcess.validate_model."""
 
     def test_no_structure(self, field_singlefile):
+        """Validation fails when no structure or file is provided."""
         model = MainAppModel()
         model.workflow_model.force_field = field_singlefile
         model.workflow_model.use_detailed_control = True
         assert DLPOLYProcess.validate_model(model) is False
 
     def test_no_force_field(self, water_structure):
+        """Validation fails when no force field is provided."""
         model = MainAppModel()
         model.structure_model.structure = water_structure
         assert DLPOLYProcess.validate_model(model) is False
 
     def test_no_control(self, water_structure, field_singlefile):
+        """Validation fails when no control input is provided."""
         model = MainAppModel()
         model.structure_model.structure = water_structure
         model.workflow_model.force_field = field_singlefile
         assert DLPOLYProcess.validate_model(model) is False
 
     def test_valid_detailed(self, water_structure, field_singlefile):
+        """A structure, force field and detailed control validate."""
         model = MainAppModel()
         model.structure_model.structure = water_structure
         model.workflow_model.force_field = field_singlefile
@@ -153,6 +157,7 @@ class TestValidateModel:
     def test_valid_control_file(
         self, water_structure, field_singlefile, control_singlefile
     ):
+        """A structure, force field and control file validate."""
         model = MainAppModel()
         model.structure_model.structure = water_structure
         model.workflow_model.force_field = field_singlefile
@@ -162,6 +167,7 @@ class TestValidateModel:
     def test_valid_with_structure_file(
         self, xyz_singlefile, field_singlefile, control_singlefile
     ):
+        """A file-based configuration validates like a StructureData."""
         model = MainAppModel()
         model.structure_model.structure_file = xyz_singlefile
         model.workflow_model.force_field = field_singlefile

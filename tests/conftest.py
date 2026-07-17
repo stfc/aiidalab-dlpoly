@@ -74,12 +74,7 @@ def periodic_structure():
 @pytest.fixture
 def xyz_bytes():
     """Return the raw bytes of a minimal XYZ water file."""
-    return (
-        b"3\nWater\n"
-        b"O 0.0  0.000  0.000\n"
-        b"H 0.0  0.757  0.586\n"
-        b"H 0.0 -0.757  0.586\n"
-    )
+    return b"3\nWater\nO 0.0  0.000  0.000\nH 0.0  0.757  0.586\nH 0.0 -0.757  0.586\n"
 
 
 @pytest.fixture

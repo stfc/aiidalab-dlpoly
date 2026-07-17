@@ -1,6 +1,5 @@
 """Tests for the StructureSelectionWidget."""
 
-from aiida.orm import StructureData
 from alc_aiidalab_widgets.widgets import StructureViewWidget
 from ipywidgets import HTML
 

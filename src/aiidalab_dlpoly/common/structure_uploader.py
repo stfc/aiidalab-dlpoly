@@ -1,5 +1,7 @@
 """Widget for selecting an input structure from various sources."""
 
+from __future__ import annotations
+
 from aiida.orm import SinglefileData, StructureData, TrajectoryData
 from alc_aiidalab_widgets.widgets import (
     AiiDADatabaseQueryWidget,

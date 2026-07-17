@@ -1,5 +1,7 @@
 """Defines the MVC model for a full DL_POLY process."""
 
+from __future__ import annotations
+
 from typing import cast
 
 import traitlets as tl

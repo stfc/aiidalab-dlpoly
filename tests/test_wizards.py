@@ -3,11 +3,11 @@
 from aiidalab_widgets_base import WizardAppWidgetStep
 
 from aiidalab_dlpoly.models.resources import ComputationalResourcesModel
+from aiidalab_dlpoly.models.results import ResultsModel
 from aiidalab_dlpoly.models.structure import StructureInputModel
 from aiidalab_dlpoly.models.workflow import WorkflowInputModel
 from aiidalab_dlpoly.process import MainAppModel
 from aiidalab_dlpoly.wizards.main_app import MainAppWizardWidget
-from aiidalab_dlpoly.models.results import ResultsModel
 from aiidalab_dlpoly.wizards.resources import (
     ComputationalResourcesWizardStep,
     ResourceSetupBox,
@@ -385,9 +385,7 @@ class TestMainAppWizardWidget:
         wizard = MainAppWizardWidget(MainAppModel())
         assert isinstance(wizard.structureStep, StructureWizardStep)
         assert isinstance(wizard.workflowStep, WorkflowWizardStep)
-        assert isinstance(
-            wizard.compResourceStep, ComputationalResourcesWizardStep
-        )
+        assert isinstance(wizard.compResourceStep, ComputationalResourcesWizardStep)
         assert isinstance(wizard.results_step, ResultsWizardStep)
         assert isinstance(wizard.workflowStep, WizardAppWidgetStep)
 

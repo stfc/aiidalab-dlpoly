@@ -1,0 +1,182 @@
+"""Defines the model and view for the resource setup stage."""
+
+import aiidalab_widgets_base as awb
+import ipywidgets as ipw
+import traitlets as tl
+from aiida.orm import ContainerizedCode, InstalledCode, PortableCode, QueryBuilder
+
+from aiidalab_dlpoly.models.resources import ComputationalResourcesModel
+from aiidalab_dlpoly.utils import test_aiida_dlpoly_import
+
+
+class ComputationalResourcesWizardStep(ipw.VBox, awb.WizardAppWidgetStep):
+    """Main view for the resource setup stage."""
+
+    def __init__(self, model: ComputationalResourcesModel, **kwargs):
+        """
+        ComputationalResourcesWizardStep constructor.
+
+        Parameters
+        ----------
+        model : ComputationalResourcesModel
+            A model controlling the data required for the resource step.
+        **kwargs :
+            Keyword arguments passed to the parent class's constructor.
+        """
+        super().__init__(children=[], **kwargs)
+        self.model = model
+        self.rendered = False
+
+        self.header = ipw.HTML(
+            """
+            <h3> Computational Resources Setup </h3>
+            """,
+            layout={"margin": "auto"},
+        )
+        self.dlpoly_installed = test_aiida_dlpoly_import()
+        self.dlpoly_warning = ipw.HTML("", layout={"margin": "auto"})
+
+        self.guide = ipw.HTML(
+            self.model.default_guide,
+        )
+
+        self.submit_btn = ipw.Button(
+            description="Submit",
+            button_style="success",
+            tooltip="Submit the calculation",
+            icon="check",
+            layout={"width": "80%", "margin": "auto"},
+        )
+        self.submit_btn.on_click(self._submit)
+
+        self.children = [
+            # self.header,
+            self.guide,
+            self.dlpoly_warning if not self.dlpoly_installed else ipw.HTML(""),
+            ResourceSetupBox(model=self.model),
+            self.submit_btn,
+        ]
+        return
+
+    def render(self):
+        """Render the wizard's contents if not already rendered."""
+        if self.rendered:
+            return
+        self._refresh_widget()
+        self.rendered = True
+        return
+
+    def _submit(self, _=None) -> None:
+        """Handle the submission of the AiiDA process."""
+        if self.model.validate():
+            self.model.submitted = True
+            self.submit_btn.disabled = True
+            self.submit_btn.description = "Submitted"
+        else:
+            print("ERROR: Input Validation Failed")
+        return
+
+    def _refresh_widget(self) -> None:
+        """Refresh the widget's contents."""
+        self.dlpoly_installed = test_aiida_dlpoly_import()
+        if not self.dlpoly_installed:
+            self.submit_btn.disabled = True
+            self.dlpoly_warning.value = (
+                "<p style='color:red;'>"
+                "The aiida-dlpoly plugin is not installed. Please install it "
+                "to proceed."
+                "</p>"
+            )
+        else:
+            self.dlpoly_warning.value = ""
+            self.submit_btn.disabled = False
+
+
+class ResourceSetupBox(ipw.VBox):
+    """A box widget for defining computational resources."""
+
+    def __init__(self, model: ComputationalResourcesModel, **kwargs):
+        """
+        ResourceSetupBox constructor.
+
+        Parameters
+        ----------
+        model : ComputationalResourcesModel
+            A model controlling the data required for the resource step.
+        **kwargs :
+            Keyword arguments passed to the parent class's constructor.
+        """
+        super().__init__(layout={"margin": "auto", "width": "80%"}, **kwargs)
+        self.model = model
+
+        self.code = ipw.Dropdown(
+            description="Code:",
+            layout={"width": "60%"},
+        )
+        self.update_codes()
+        # A directional link mapping an empty selection (``None`` when no codes
+        # are registered) to an empty string, so the ``Unicode`` code_label
+        # trait does not raise when the dropdown has no options.
+        tl.dlink(
+            (self.code, "value"),
+            (self.model, "code_label"),
+            transform=lambda value: value or "",
+        )
+        self.refresh_codes_button = ipw.Button(
+            description="Refresh",
+            button_style="info",
+            tooltip="Refresh the list of available codes",
+            icon="refresh",
+            layout={"width": "20%"},
+        )
+        self.refresh_codes_button.on_click(self.update_codes)
+        self.code_box = ipw.HBox(
+            layout={"width": "100%"}, children=[self.code, self.refresh_codes_button]
+        )
+
+        self.ncpus_input = ipw.BoundedIntText(
+            value=self.model.ncpus,
+            min=1,
+            max=128,
+            step=1,
+            description="No. CPUs:",
+            disabled=False,
+            layout=ipw.Layout(width="80%"),
+        )
+        tl.link((self.ncpus_input, "value"), (self.model, "ncpus"))
+
+        self.label = ipw.Text(
+            value=self.model.process_label,
+            placeholder="Enter process label",
+            description="Label:",
+            disabled=False,
+            layout=ipw.Layout(width="80%"),
+        )
+        tl.link((self.label, "value"), (self.model, "process_label"))
+
+        self.description = ipw.Textarea(
+            value=self.model.process_description,
+            placeholder="Enter process description",
+            description="Description:",
+            disabled=False,
+            layout=ipw.Layout(width="80%"),
+        )
+        tl.link((self.description, "value"), (self.model, "process_description"))
+
+        self.children = [
+            self.code_box,
+            self.ncpus_input,
+            self.label,
+            self.description,
+        ]
+
+    def update_codes(self, _=None) -> None:
+        """Update the list of available codes."""
+        qb = QueryBuilder()
+        qb.append((InstalledCode, ContainerizedCode, PortableCode))
+        codes = qb.all()
+        code_labels = [f"{code[0].label}@{code[0].computer.label}" for code in codes]
+        self.code.options = code_labels
+        if code_labels:
+            self.code.value = code_labels[0]
+        return

@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: "AiiDAlab DL_POLY App"
+message: "If you use this software, please cite it as below."
+type: software
+authors:
+  - family-names: Speake
+    given-names: Benjamin
+    orcid: "https://orcid.org/0000-0002-5690-9470"
+repository-code: "https://github.com/stfc/aiidalab-dlpoly"
+abstract: "AiiDAlab workflow UI for DL_POLY molecular dynamics simulations"
+license: BSD-3-Clause
+version: 0.0.1
+date-released: "2026-07-17"

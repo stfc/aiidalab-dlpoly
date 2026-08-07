@@ -230,12 +230,48 @@ class TestWorkflowWizardStep:
         step.ensemble_inputs["ensemble"].value = "NPT"
         assert model.ensemble == "NPT"
 
-    def test_default_ensemble_hides_method_and_dpd(self):
-        """The NVE default hides the method and DPD order dropdowns."""
+    def test_default_ensemble_hides_method_dpd_and_coupling(self):
+        """The NVE default hides the method, DPD order and coupling widgets."""
         step = WorkflowWizardStep(WorkflowInputModel())
         step.render()
         assert step.ensemble_inputs["ensemble_method"].layout.display == "none"
         assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
+        coupling = step.ensemble_inputs["ensemble_thermostat_coupling"]
+        assert coupling.layout.display == "none"
+
+    def test_thermostat_coupling_dlinks_to_model(self):
+        """Editing the thermostat coupling widget updates the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+        step.ensemble_inputs["ensemble_thermostat_coupling"].value = 0.25
+        assert model.ensemble_thermostat_coupling == 0.25
+
+    def test_selecting_nvt_shows_coupling(self):
+        """Selecting NVT reveals the thermostat coupling and hides DPD order."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+
+        assert (
+            step.ensemble_inputs["ensemble_thermostat_coupling"].layout.display == ""
+        )
+        assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
+
+    def test_dpd_hides_coupling_shows_order(self):
+        """The dpd method swaps the coupling widget for the DPD order."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+        step.ensemble_inputs["ensemble_method"].value = "dpd"
+
+        coupling = step.ensemble_inputs["ensemble_thermostat_coupling"]
+        assert coupling.layout.display == "none"
+        assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == ""
 
     def test_selecting_nvt_populates_and_shows_method(self):
         """Selecting NVT reveals the method dropdown and its options."""

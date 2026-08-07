@@ -124,6 +124,17 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         )
         ensemble_method.observe(self._on_ensemble_method_change, "value")
 
+        ensemble_thermostat_coupling = ipw.FloatText(
+            value=self.model.ensemble_thermostat_coupling,
+            description="Thermostat coupling (ps)",
+            style=style,
+            layout=layout,
+        )
+        ipw.link(
+            (ensemble_thermostat_coupling, "value"),
+            (self.model, "ensemble_thermostat_coupling"),
+        )
+
         ensemble_dpd_order = ipw.Dropdown(
             options=self.model.DPD_ORDERS,
             value=self.model.ensemble_dpd_order,
@@ -136,6 +147,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         return {
             "ensemble": ensemble,
             "ensemble_method": ensemble_method,
+            "ensemble_thermostat_coupling": ensemble_thermostat_coupling,
             "ensemble_dpd_order": ensemble_dpd_order,
         }
 
@@ -192,10 +204,10 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         return
 
     def _on_ensemble_method_change(self, change) -> None:
-        """Store the selected ensemble method and update DPD visibility."""
+        """Store the selected ensemble method and update dependent widgets."""
         value = change["new"]
         self.model.ensemble_method = value if value is not None else ""
-        self._update_dpd_visibility()
+        self._update_method_dependent_visibility()
         return
 
     def _sync_ensemble_widgets(self) -> None:
@@ -214,14 +226,22 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         else:
             self.model.ensemble_method = ""
         self._set_visible(method_widget, self.model.requires_ensemble_method)
-        self._update_dpd_visibility()
+        self._update_method_dependent_visibility()
         return
 
-    def _update_dpd_visibility(self) -> None:
-        """Show the DPD order dropdown only when the DPD method is selected."""
+    def _update_method_dependent_visibility(self) -> None:
+        """Toggle the widgets whose relevance depends on the ensemble method.
+
+        The DPD order is shown only for the ``dpd`` method, while the thermostat
+        coupling applies to every other method-requiring ensemble.
+        """
         self._set_visible(
             self.ensemble_inputs["ensemble_dpd_order"],
             self.model.requires_dpd_order,
+        )
+        self._set_visible(
+            self.ensemble_inputs["ensemble_thermostat_coupling"],
+            self.model.requires_thermostat_coupling,
         )
         return
 

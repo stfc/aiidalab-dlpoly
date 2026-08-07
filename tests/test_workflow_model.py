@@ -65,8 +65,12 @@ def test_control_parameters_reflect_edits():
 def test_control_units_cover_all_numeric_parameters():
     """Every numeric control parameter has a documented unit."""
     model = WorkflowInputModel()
-    # The ensemble parameters are strings/integers and carry no unit, so they
-    # are excluded from CONTROL_UNITS.
+    # Use an ensemble configuration that exposes the thermostat coupling so that
+    # every numeric parameter is present in the control dictionary.
+    model.ensemble = "NVT"
+    model.ensemble_method = "Hoover"
+    # The ensemble type/method are strings and the DPD order is an integer, so
+    # they carry no unit and are excluded from CONTROL_UNITS.
     assert set(model.CONTROL_UNITS) <= set(model.control_parameters)
     numeric_params = set(model.control_parameters) - {
         "ensemble",
@@ -85,6 +89,7 @@ class TestEnsemble:
         assert model.ensemble == "NVE"
         assert model.ensemble_method == ""
         assert model.ensemble_dpd_order == 0
+        assert model.ensemble_thermostat_coupling == 0.1
 
     def test_nve_requires_no_method(self):
         """NVE does not require an ensemble method."""
@@ -134,6 +139,29 @@ class TestEnsemble:
         model.ensemble_method = "Hoover"
         assert model.requires_dpd_order is False
 
+    def test_thermostat_coupling_not_required_for_nve(self):
+        """NVE/PMF ensembles do not use a thermostat coupling."""
+        model = WorkflowInputModel()
+        model.ensemble = "NVE"
+        assert model.requires_thermostat_coupling is False
+        model.ensemble = "PMF"
+        assert model.requires_thermostat_coupling is False
+
+    def test_thermostat_coupling_required_for_method_ensembles(self):
+        """NVT/NPT/NST ensembles use a thermostat coupling by default."""
+        model = WorkflowInputModel()
+        for ensemble in ("NVT", "NPT", "NST"):
+            model.ensemble = ensemble
+            assert model.requires_thermostat_coupling is True
+
+    def test_thermostat_coupling_not_required_for_dpd(self):
+        """The dpd method uses the DPD order instead of a thermostat coupling."""
+        model = WorkflowInputModel()
+        model.ensemble = "NVT"
+        model.ensemble_method = "dpd"
+        assert model.requires_thermostat_coupling is False
+        assert model.requires_dpd_order is True
+
 
 class TestEnsembleControlParameters:
     """Tests for how ensemble parameters appear in the control dictionary."""
@@ -169,6 +197,24 @@ class TestEnsembleControlParameters:
         params = model.control_parameters
         assert params["ensemble_method"] == "dpd"
         assert params["ensemble_dpd_order"] == 2
+        assert "ensemble_thermostat_coupling" not in params
+
+    def test_thermostat_coupling_omitted_for_nve(self):
+        """No thermostat coupling is emitted for method-less ensembles."""
+        model = WorkflowInputModel()
+        model.ensemble = "NVE"
+        assert "ensemble_thermostat_coupling" not in model.control_parameters
+
+    def test_thermostat_coupling_included_with_unit(self):
+        """The thermostat coupling is emitted as a ``(value, unit)`` pair."""
+        model = WorkflowInputModel()
+        model.ensemble = "NPT"
+        model.ensemble_method = "Hoover"
+        model.ensemble_thermostat_coupling = 0.5
+        assert model.control_parameters["ensemble_thermostat_coupling"] == (
+            0.5,
+            "ps",
+        )
 
 
 class TestHasValidEnsemble:

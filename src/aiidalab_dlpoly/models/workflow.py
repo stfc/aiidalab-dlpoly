@@ -16,7 +16,8 @@ class WorkflowInputModel(tl.HasTraits):
     """
 
     # Units expected by the aiida-dlpoly plugin for each numeric control
-    # parameter. The ensemble parameters are strings/integers and carry no unit.
+    # parameter. The ensemble type/method are strings and the DPD order an
+    # integer, so they carry no unit.
     CONTROL_UNITS = {
         "temperature": "K",
         "timestep": "ps",
@@ -25,6 +26,7 @@ class WorkflowInputModel(tl.HasTraits):
         "cutoff": "ang",
         "padding": "ang",
         "stats_frequency": "steps",
+        "ensemble_thermostat_coupling": "ps",
     }
 
     # Valid ensemble types accepted by DL_POLY.
@@ -70,6 +72,7 @@ class WorkflowInputModel(tl.HasTraits):
     ensemble = tl.Unicode("NVE").tag(sync=True)
     ensemble_method = tl.Unicode("").tag(sync=True)
     ensemble_dpd_order = tl.Int(0).tag(sync=True)
+    ensemble_thermostat_coupling = tl.Float(0.1).tag(sync=True)
 
     submitted = tl.Bool(False).tag(sync=True)
 
@@ -103,6 +106,15 @@ class WorkflowInputModel(tl.HasTraits):
         return self.requires_ensemble_method and self.ensemble_method == "dpd"
 
     @property
+    def requires_thermostat_coupling(self) -> bool:
+        """True if the ensemble requires a thermostat coupling time.
+
+        Applies to the NVT/NPT/NST ensembles, except when the DPD method is
+        selected (which uses the DPD order instead).
+        """
+        return self.requires_ensemble_method and self.ensemble_method != "dpd"
+
+    @property
     def control_parameters(self) -> dict:
         """Return the detailed control parameters as a control dictionary.
 
@@ -132,6 +144,11 @@ class WorkflowInputModel(tl.HasTraits):
             parameters["ensemble_method"] = self.ensemble_method
         if self.requires_dpd_order:
             parameters["ensemble_dpd_order"] = self.ensemble_dpd_order
+        if self.requires_thermostat_coupling:
+            parameters["ensemble_thermostat_coupling"] = (
+                self.ensemble_thermostat_coupling,
+                self.CONTROL_UNITS["ensemble_thermostat_coupling"],
+            )
         return parameters
 
     @property

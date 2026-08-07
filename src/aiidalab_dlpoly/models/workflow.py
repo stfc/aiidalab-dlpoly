@@ -1,10 +1,10 @@
 """The workflow input model for DL_POLY input configuration."""
 
+import traitlets as tl
 from aiida.orm import SinglefileData
-from traitlets import Bool, Float, HasTraits, Instance, Int
 
 
-class WorkflowInputModel(HasTraits):
+class WorkflowInputModel(tl.HasTraits):
     """
     Model for the DL_POLY workflow configuration step.
 
@@ -26,21 +26,21 @@ class WorkflowInputModel(HasTraits):
         "stats_frequency": "steps",
     }
 
-    force_field = Instance(SinglefileData, allow_none=True)
+    force_field = tl.Instance(SinglefileData, allow_none=True)
 
-    use_detailed_control = Bool(False).tag(sync=True)
-    control_file = Instance(SinglefileData, allow_none=True)
+    use_detailed_control = tl.Bool(False).tag(sync=True)
+    control_file = tl.Instance(SinglefileData, allow_none=True)
 
     # Key DL_POLY control parameters (used when use_detailed_control is True).
-    temperature = Float(300.0).tag(sync=True)
-    timestep = Float(0.001).tag(sync=True)
-    time_run = Int(10000).tag(sync=True)
-    time_equilibration = Int(1000).tag(sync=True)
-    cutoff = Float(10.0).tag(sync=True)
-    padding = Float(1.0).tag(sync=True)
-    stats_frequency = Int(100).tag(sync=True)
+    temperature = tl.Float(300.0).tag(sync=True)
+    timestep = tl.Float(0.001).tag(sync=True)
+    time_run = tl.Int(10000).tag(sync=True)
+    time_equilibration = tl.Int(1000).tag(sync=True)
+    cutoff = tl.Float(10.0).tag(sync=True)
+    padding = tl.Float(1.0).tag(sync=True)
+    stats_frequency = tl.Int(100).tag(sync=True)
 
-    submitted = Bool(False).tag(sync=True)
+    submitted = tl.Bool(False).tag(sync=True)
 
     @property
     def has_force_field(self) -> bool:

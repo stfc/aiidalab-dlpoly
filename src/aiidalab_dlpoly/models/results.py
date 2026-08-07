@@ -1,6 +1,6 @@
 """Defines the MVC model for holding DL_POLY results information."""
 
-from traitlets import Bool
+import traitlets as tl
 
 from aiidalab_dlpoly.models.process import ProcessModel
 
@@ -8,4 +8,4 @@ from aiidalab_dlpoly.models.process import ProcessModel
 class ResultsModel(ProcessModel):
     """MVC results step model."""
 
-    blocked = Bool(True)
+    blocked = tl.Bool(True)

@@ -1,10 +1,10 @@
 """The structure input model for DL_POLY input configuration."""
 
+import traitlets as tl
 from aiida.orm import SinglefileData, StructureData
-from traitlets import Bool, HasTraits, Instance, observe
 
 
-class StructureInputModel(HasTraits):
+class StructureInputModel(tl.HasTraits):
     """
     Model for structure selection and manipulation.
 
@@ -12,9 +12,9 @@ class StructureInputModel(HasTraits):
     step in the app's configuration wizard.
     """
 
-    structure = Instance(StructureData, allow_none=True)
-    structure_file = Instance(SinglefileData, allow_none=True)
-    submitted = Bool(False).tag(sync=True)
+    structure = tl.Instance(StructureData, allow_none=True)
+    structure_file = tl.Instance(SinglefileData, allow_none=True)
+    submitted = tl.Bool(False).tag(sync=True)
 
     @property
     def has_structure(self) -> bool:
@@ -33,7 +33,7 @@ class StructureInputModel(HasTraits):
             return any(self.structure.pbc)
         return False
 
-    @observe("structure")
+    @tl.observe("structure")
     def _update_structure(self, _) -> None:
         """Remove any file associated if a StructureData object is provided."""
         self.structure_file = None

@@ -8,24 +8,24 @@ from alc_aiidalab_widgets.widgets import (
     FileUploadWidget,
     StructureViewWidget,
 )
+import ipywidgets as ipw
+import traitlets as tl
 from ase import Atoms
-from ipywidgets import HTML, Tab, VBox, dlink
-from traitlets import HasTraits, Instance
 
 
-class StructureSelectionWidget(VBox, HasTraits):
+class StructureSelectionWidget(ipw.VBox, tl.HasTraits):
     """Widget for selecting an input structure from various sources."""
 
-    structure_data = Instance(StructureData, allow_none=True)
-    structure_file = Instance(SinglefileData, allow_none=True)
-    trajectory_data = Instance(TrajectoryData, allow_none=True)
+    structure_data = tl.Instance(StructureData, allow_none=True)
+    structure_file = tl.Instance(SinglefileData, allow_none=True)
+    trajectory_data = tl.Instance(TrajectoryData, allow_none=True)
 
     def __init__(self, **kwargs):
         """StructureSelectionWidget constructor."""
         super().__init__(**kwargs)
 
         # Upload file
-        self.file_input_widget = VBox()
+        self.file_input_widget = ipw.VBox()
         self.file_uploader = FileUploadWidget(description="CONFIG file: ")
         self.file_input_widget.children = [
             self.file_uploader,
@@ -37,7 +37,7 @@ class StructureSelectionWidget(VBox, HasTraits):
             query=[SinglefileData, StructureData],
         )
 
-        self.tabs = Tab()
+        self.tabs = ipw.Tab()
         self.tabs.children = [
             self.file_input_widget,
             self.database_widget,
@@ -45,14 +45,14 @@ class StructureSelectionWidget(VBox, HasTraits):
         for i, title in enumerate(["Upload File", "AiiDA Database"]):
             self.tabs.set_title(i, title)
 
-        self.viewer = HTML("<p>No structure found...</p>")
+        self.viewer = ipw.HTML("<p>No structure found...</p>")
 
-        self.children = [self.tabs, HTML("<h2>Viewer:</h2>"), self.viewer]
+        self.children = [self.tabs, ipw.HTML("<h2>Viewer:</h2>"), self.viewer]
 
         self.file_uploader.observe(self._on_file_upload, "file")
         self.database_widget.observe(self._on_database_search, "data_object")
 
-        dlink((self.file_uploader, "file"), (self, "structure_file"))
+        ipw.dlink((self.file_uploader, "file"), (self, "structure_file"))
 
         return
 
@@ -92,7 +92,7 @@ class StructureSelectionWidget(VBox, HasTraits):
             self.viewer = StructureViewWidget()
             self.viewer.assign_structure_from_ase(structure)
         else:
-            self.viewer = HTML("<p>Could not visualise structure ...</p>")
+            self.viewer = ipw.HTML("<p>Could not visualise structure ...</p>")
         self._update_children()
         return
 

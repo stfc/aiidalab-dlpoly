@@ -4,12 +4,12 @@ from aiida.orm import Node, ProcessNode
 from aiidalab_widgets_base.loaders import LoadingWidget
 from aiidalab_widgets_base.viewers import AIIDA_VIEWER_MAPPING
 from alc_aiidalab_widgets.viewers import ALC_AIIDA_VIEWER_MAPPING
+import ipywidgets as ipw
+import traitlets as tl
 from IPython.display import clear_output, display
-from ipywidgets import DOMWidget, Output, VBox
-from traitlets import Instance, observe
 
 
-class CustomAiidaNodeViewWidget(VBox):
+class CustomAiidaNodeViewWidget(ipw.VBox):
     """
     Custom viewer based on a specific AiiDA node type.
 
@@ -19,17 +19,17 @@ class CustomAiidaNodeViewWidget(VBox):
     before falling back to the default AiiDAlab viewers.
     """
 
-    node = Instance(Node, allow_none=True)
+    node = tl.Instance(Node, allow_none=True)
 
     def __init__(self, **kwargs):
         """CustomAiidaNodeViewWidget Constructor."""
-        self._output = Output()
+        self._output = ipw.Output()
         self.node_views = {}
         self.node_view_loading_message = LoadingWidget("Loading Node View")
         super().__init__(**kwargs)
         self.add_class("aiida-node-view-widget")
 
-    @observe("node")
+    @tl.observe("node")
     def _observe_node(self, change):
         if not ((node := change["new"]) and node != change["old"]):
             return
@@ -38,7 +38,7 @@ class CustomAiidaNodeViewWidget(VBox):
             return
         self.children = [self.node_view_loading_message]
         node_view = self._viewer(node)
-        if isinstance(node_view, DOMWidget):
+        if isinstance(node_view, ipw.DOMWidget):
             self.node_views[node.uuid] = node_view
             self.children = [node_view]
         else:

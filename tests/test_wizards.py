@@ -222,6 +222,73 @@ class TestWorkflowWizardStep:
 
         assert model.submitted is False
 
+    def test_ensemble_dropdown_dlinks_to_model(self):
+        """Selecting an ensemble propagates to the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+        step.ensemble_inputs["ensemble"].value = "NPT"
+        assert model.ensemble == "NPT"
+
+    def test_default_ensemble_hides_method_and_dpd(self):
+        """The NVE default hides the method and DPD order dropdowns."""
+        step = WorkflowWizardStep(WorkflowInputModel())
+        step.render()
+        assert step.ensemble_inputs["ensemble_method"].layout.display == "none"
+        assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
+
+    def test_selecting_nvt_populates_and_shows_method(self):
+        """Selecting NVT reveals the method dropdown and its options."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+
+        method_widget = step.ensemble_inputs["ensemble_method"]
+        assert method_widget.layout.display == ""
+        assert method_widget.options == model.ENSEMBLE_METHODS["NVT"]
+        # The model is seeded with the first valid method.
+        assert model.ensemble_method == "Evans"
+
+    def test_selecting_dpd_shows_order(self):
+        """Selecting the dpd method reveals the DPD order dropdown."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+        step.ensemble_inputs["ensemble_method"].value = "dpd"
+
+        assert model.ensemble_method == "dpd"
+        assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == ""
+
+    def test_switching_ensemble_resets_invalid_method(self):
+        """Switching to an ensemble without the current method reselects one."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+        step.ensemble_inputs["ensemble_method"].value = "Evans"
+        # Evans is not valid for NPT, so the method should reset.
+        step.ensemble_inputs["ensemble"].value = "NPT"
+
+        assert model.ensemble_method in model.ENSEMBLE_METHODS["NPT"]
+        assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
+
+    def test_switching_to_nve_clears_method(self):
+        """Switching back to NVE clears and hides the method dropdown."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+        step.ensemble_inputs["ensemble"].value = "NVE"
+
+        assert model.ensemble_method == ""
+        assert step.ensemble_inputs["ensemble_method"].layout.display == "none"
+
 
 class TestComputationalResourcesWizardStep:
     """Tests for the computational resources wizard step."""

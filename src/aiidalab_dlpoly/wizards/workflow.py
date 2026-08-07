@@ -74,6 +74,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
 
         # Detailed control parameter inputs.
         self.control_inputs = self._build_control_inputs()
+        self.ensemble_inputs = self._build_ensemble_inputs()
 
     def _build_control_inputs(self) -> dict:
         """Create the detailed control parameter widgets, dlinked to the model."""
@@ -93,6 +94,51 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             widgets[trait] = widget
         return widgets
 
+    def _build_ensemble_inputs(self) -> dict:
+        """Create the ensemble control widgets.
+
+        The ensemble is a required selection. The ensemble method dropdown is
+        populated with the methods valid for the chosen ensemble and hidden for
+        ensembles that do not take one. The DPD order dropdown is only shown when
+        the ``dpd`` method is selected.
+        """
+        style = {"description_width": "180px"}
+        layout = {"width": "320px"}
+
+        ensemble = ipw.Dropdown(
+            options=self.model.ENSEMBLES,
+            value=self.model.ensemble,
+            description="Ensemble",
+            style=style,
+            layout=layout,
+        )
+        ipw.link((ensemble, "value"), (self.model, "ensemble"))
+        ensemble.observe(self._on_ensemble_change, "value")
+
+        # Options are managed manually as they depend on the selected ensemble.
+        ensemble_method = ipw.Dropdown(
+            options=self.model.available_ensemble_methods,
+            description="Ensemble method",
+            style=style,
+            layout=layout,
+        )
+        ensemble_method.observe(self._on_ensemble_method_change, "value")
+
+        ensemble_dpd_order = ipw.Dropdown(
+            options=self.model.DPD_ORDERS,
+            value=self.model.ensemble_dpd_order,
+            description="DPD order",
+            style=style,
+            layout=layout,
+        )
+        ipw.link((ensemble_dpd_order, "value"), (self.model, "ensemble_dpd_order"))
+
+        return {
+            "ensemble": ensemble,
+            "ensemble_method": ensemble_method,
+            "ensemble_dpd_order": ensemble_dpd_order,
+        }
+
     def render(self):
         """Render the wizard's contents if not already rendered."""
         if self.rendered:
@@ -110,7 +156,10 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         )
 
         self.detailed_section = ipw.VBox(
-            children=list(self.control_inputs.values()),
+            children=[
+                *self.ensemble_inputs.values(),
+                *self.control_inputs.values(),
+            ],
         )
 
         self.control_container = ipw.VBox()
@@ -125,6 +174,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         )
         self.submit_btn.on_click(self.submit_workflow)
 
+        self._sync_ensemble_widgets()
         self._update_control_container()
         self._update_children()
         self.rendered = True
@@ -134,6 +184,51 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         """Swap the control input section when the checkbox is toggled."""
         if self.rendered:
             self._update_control_container()
+        return
+
+    def _on_ensemble_change(self, _) -> None:
+        """Repopulate the ensemble method options when the ensemble changes."""
+        self._sync_ensemble_widgets()
+        return
+
+    def _on_ensemble_method_change(self, change) -> None:
+        """Store the selected ensemble method and update DPD visibility."""
+        value = change["new"]
+        self.model.ensemble_method = value if value is not None else ""
+        self._update_dpd_visibility()
+        return
+
+    def _sync_ensemble_widgets(self) -> None:
+        """Align the ensemble method options and visibility with the ensemble."""
+        methods = self.model.available_ensemble_methods
+        method_widget = self.ensemble_inputs["ensemble_method"]
+        # Assigning options resets the widget value; preserve the current method
+        # selection when it is still valid, otherwise fall back to the first.
+        method_widget.options = methods
+        if methods:
+            method_widget.value = (
+                self.model.ensemble_method
+                if self.model.ensemble_method in methods
+                else methods[0]
+            )
+        else:
+            self.model.ensemble_method = ""
+        self._set_visible(method_widget, self.model.requires_ensemble_method)
+        self._update_dpd_visibility()
+        return
+
+    def _update_dpd_visibility(self) -> None:
+        """Show the DPD order dropdown only when the DPD method is selected."""
+        self._set_visible(
+            self.ensemble_inputs["ensemble_dpd_order"],
+            self.model.requires_dpd_order,
+        )
+        return
+
+    @staticmethod
+    def _set_visible(widget, visible: bool) -> None:
+        """Show or hide a widget by toggling its CSS display property."""
+        widget.layout.display = "" if visible else "none"
         return
 
     def _update_control_container(self) -> None:

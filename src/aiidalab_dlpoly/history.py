@@ -3,7 +3,7 @@
 from datetime import datetime
 
 import ipywidgets as ipw
-from aiida.orm import CalcJobNode, WorkChainNode
+from aiida_dlpoly.calculations.base import DLPOLYCalculation
 from aiidalab_widgets_base import ProcessNodesTreeWidget
 from alc_aiidalab_widgets.widgets import AiiDADatabaseQueryWidget
 from IPython.display import display
@@ -86,7 +86,8 @@ class HistoryAppView(ipw.VBox):
             """
         )
         self.lookup_widget = AiiDADatabaseQueryWidget(
-            "Process Lookup", [CalcJobNode, WorkChainNode]
+            "Process Lookup",
+            [DLPOLYCalculation],  # [CalcJobNode, WorkChainNode]
         )
         self.lookup_widget.observe(self._update_node_view, "data_object")
 

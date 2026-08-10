@@ -9,5 +9,5 @@ authors:
 repository-code: "https://github.com/stfc/aiidalab-dlpoly"
 abstract: "AiiDAlab workflow UI for DL_POLY molecular dynamics simulations"
 license: BSD-3-Clause
-version: 0.0.1
-date-released: "2026-07-17"
+version: 0.1.0
+date-released: "2026-08-10"

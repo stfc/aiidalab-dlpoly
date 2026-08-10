@@ -44,10 +44,13 @@ jobs:
           ')" >> $GITHUB_ENV
 
       - name: Compare package version to git tag
-        if: ${{ ! contains(github.ref, env.VERSION) }}
+        if: ${{ github.ref != format('refs/tags/v{0}', env.VERSION) }}
         run: |
-          echo "Git tag does not match package version."
+          echo "Git tag (${{ github.ref }}) does not match package version (v${{ env.VERSION }})."
           exit 1
+
+      - name: Publish to PyPI
+        run: twine upload dist/*
 
       - name: Create Release
         uses: ncipollo/release-action@v1
@@ -58,6 +61,3 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           skipIfReleaseExists: true
           generateReleaseNotes: true
-
-      - name: Publish to PyPI
-        run: twine upload dist/*

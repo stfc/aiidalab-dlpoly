@@ -39,21 +39,21 @@ def test_new_calculation_link(monkeypatch):
     """New Calculation opens the main notebook."""
     buttons, calls = _patched_buttons(monkeypatch)
     buttons.new_calc_link.click()
-    assert calls == ["/apps/apps/dlpoly/notebooks/main.ipynb"]
+    assert calls == ["/apps/apps/dl_poly/notebooks/main.ipynb"]
 
 
 def test_history_link(monkeypatch):
     """History opens the history notebook."""
     buttons, calls = _patched_buttons(monkeypatch)
     buttons.history_link.click()
-    assert calls == ["/apps/apps/dlpoly/notebooks/history.ipynb"]
+    assert calls == ["/apps/apps/dl_poly/notebooks/history.ipynb"]
 
 
 def test_resource_setup_link(monkeypatch):
     """Setup Resources opens the resources notebook."""
     buttons, calls = _patched_buttons(monkeypatch)
     buttons.resource_setup_link.click()
-    assert calls == ["/apps/apps/dlpoly/notebooks/resources.ipynb"]
+    assert calls == ["/apps/apps/dl_poly/notebooks/resources.ipynb"]
 
 
 def test_documentation_link(monkeypatch):

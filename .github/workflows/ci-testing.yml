@@ -12,12 +12,6 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/stfc/alc-ux/base:py310
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

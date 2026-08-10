@@ -4,6 +4,7 @@ import ipywidgets as ipw
 from aiidalab_widgets_base import WizardAppWidgetStep
 from alc_aiidalab_widgets.widgets import FileUploadWidget
 
+from aiidalab_dlpoly.common.field_uploader import FieldSelectionWidget
 from aiidalab_dlpoly.models.workflow import WorkflowInputModel
 
 
@@ -52,9 +53,9 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             """
         )
 
-        # Force field file upload (required).
-        self.field_uploader = FileUploadWidget(description="Force field file: ")
-        ipw.dlink((self.field_uploader, "file"), (self.model, "force_field"))
+        # Force field input (required): upload a file or query the AiiDA database.
+        self.field_uploader = FieldSelectionWidget()
+        ipw.dlink((self.field_uploader, "force_field"), (self.model, "force_field"))
 
         # Control file upload (used when detailed control is disabled).
         self.control_uploader = FileUploadWidget(description="Control file: ")

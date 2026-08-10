@@ -125,10 +125,24 @@ class TestWorkflowWizardStep:
         assert step.submit_btn is first
 
     def test_field_uploader_dlinks_to_model(self, field_singlefile):
-        """The force field upload propagates to the model via dlink."""
+        """The force field selection propagates to the model via dlink."""
         model = WorkflowInputModel()
         step = WorkflowWizardStep(model)
-        step.field_uploader.file = field_singlefile
+        step.field_uploader.force_field = field_singlefile
+        assert model.force_field is field_singlefile
+
+    def test_field_upload_propagates_to_model(self, field_singlefile):
+        """An uploaded force field file reaches the model through the widget."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.field_uploader.file_uploader.file = field_singlefile
+        assert model.force_field is field_singlefile
+
+    def test_field_database_selection_propagates_to_model(self, field_singlefile):
+        """A force field selected from the AiiDA database reaches the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.field_uploader.database_widget.data_object = field_singlefile
         assert model.force_field is field_singlefile
 
     def test_control_uploader_dlinks_to_model(self, control_singlefile):
@@ -189,7 +203,7 @@ class TestWorkflowWizardStep:
         model = WorkflowInputModel()
         step = WorkflowWizardStep(model)
         step.render()
-        step.field_uploader.file = field_singlefile
+        step.field_uploader.force_field = field_singlefile
         step.control_uploader.file = control_singlefile
 
         step.submit_workflow(None)
@@ -203,7 +217,7 @@ class TestWorkflowWizardStep:
         model = WorkflowInputModel()
         step = WorkflowWizardStep(model)
         step.render()
-        step.field_uploader.file = field_singlefile
+        step.field_uploader.force_field = field_singlefile
         step.detailed_checkbox.value = True
 
         step.submit_workflow(None)

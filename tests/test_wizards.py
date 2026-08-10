@@ -255,9 +255,7 @@ class TestWorkflowWizardStep:
 
         step.ensemble_inputs["ensemble"].value = "NVT"
 
-        assert (
-            step.ensemble_inputs["ensemble_thermostat_coupling"].layout.display == ""
-        )
+        assert step.ensemble_inputs["ensemble_thermostat_coupling"].layout.display == ""
         assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
 
     def test_dpd_hides_coupling_shows_order(self):

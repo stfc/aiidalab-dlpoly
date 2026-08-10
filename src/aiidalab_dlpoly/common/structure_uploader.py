@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import ipywidgets as ipw
+import traitlets as tl
 from aiida.orm import SinglefileData, StructureData, TrajectoryData
 from alc_aiidalab_widgets.widgets import (
     AiiDADatabaseQueryWidget,
     FileUploadWidget,
     StructureViewWidget,
 )
-import ipywidgets as ipw
-import traitlets as tl
 from ase import Atoms
 
 

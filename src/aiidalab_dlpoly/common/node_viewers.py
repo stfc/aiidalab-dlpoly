@@ -1,11 +1,11 @@
 """Defines a custom AiiDA node visualiser."""
 
+import ipywidgets as ipw
+import traitlets as tl
 from aiida.orm import Node, ProcessNode
 from aiidalab_widgets_base.loaders import LoadingWidget
 from aiidalab_widgets_base.viewers import AIIDA_VIEWER_MAPPING
 from alc_aiidalab_widgets.viewers import ALC_AIIDA_VIEWER_MAPPING
-import ipywidgets as ipw
-import traitlets as tl
 from IPython.display import clear_output, display
 
 

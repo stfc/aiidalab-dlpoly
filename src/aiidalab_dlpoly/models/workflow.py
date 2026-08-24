@@ -139,6 +139,7 @@ class WorkflowInputModel(tl.HasTraits):
                 self.CONTROL_UNITS["stats_frequency"],
             ),
             "ensemble": self.ensemble,
+            "print_frequency": (1000, "steps"),  # required for older version of DL_POLY
         }
         if self.requires_ensemble_method:
             parameters["ensemble_method"] = self.ensemble_method

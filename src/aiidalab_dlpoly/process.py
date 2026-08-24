@@ -125,6 +125,8 @@ class DLPOLYProcess:
             "num_cores_per_machine": self.model.resource_model.ncpus,
             "tot_num_mpiprocs": self.model.resource_model.ncpus,
         }
+        if builder.code.with_mpi is None:
+            builder.metadata.options.withmpi = self.model.resource_model.ncpus > 1
         # Submit and apply the label/description to the CalcJob.
         self.node = submit(builder)
         self.node.label = self.model.resource_model.process_label

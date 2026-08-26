@@ -76,6 +76,7 @@ def test_control_units_cover_all_numeric_parameters():
         "ensemble",
         "ensemble_method",
         "ensemble_dpd_order",
+        "print_frequency",
     }
     assert set(model.CONTROL_UNITS) == numeric_params
 

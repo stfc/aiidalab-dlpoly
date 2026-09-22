@@ -27,6 +27,7 @@ class WorkflowInputModel(tl.HasTraits):
         "padding": "ang",
         "stats_frequency": "steps",
         "ensemble_thermostat_coupling": "ps",
+        "rdf_frequency": "steps",
     }
 
     # Valid ensemble types accepted by DL_POLY.
@@ -73,6 +74,13 @@ class WorkflowInputModel(tl.HasTraits):
     ensemble_method = tl.Unicode("").tag(sync=True)
     ensemble_dpd_order = tl.Int(0).tag(sync=True)
     ensemble_thermostat_coupling = tl.Float(0.1).tag(sync=True)
+
+    # Radial distribution function (RDF) collection. When ``calculate_rdf`` is
+    # enabled the RDF is computed and written to ``RDFDAT``; ``rdf_frequency`` is
+    # the optional interval (in steps) at which data is collected, with 0 meaning
+    # the DL_POLY default interval is used.
+    calculate_rdf = tl.Bool(False).tag(sync=True)
+    rdf_frequency = tl.Int(0).tag(sync=True)
 
     submitted = tl.Bool(False).tag(sync=True)
 
@@ -150,6 +158,17 @@ class WorkflowInputModel(tl.HasTraits):
                 self.ensemble_thermostat_coupling,
                 self.CONTROL_UNITS["ensemble_thermostat_coupling"],
             )
+        if self.calculate_rdf:
+            # ``rdf_print`` is required to write the RDFDAT file the plugin
+            # retrieves; ``rdf_frequency`` is optional (0 uses the DL_POLY
+            # default interval).
+            parameters["rdf_calculate"] = True
+            parameters["rdf_print"] = True
+            if self.rdf_frequency > 0:
+                parameters["rdf_frequency"] = (
+                    self.rdf_frequency,
+                    self.CONTROL_UNITS["rdf_frequency"],
+                )
         return parameters
 
     @property

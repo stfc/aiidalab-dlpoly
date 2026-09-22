@@ -76,6 +76,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         # Detailed control parameter inputs.
         self.control_inputs = self._build_control_inputs()
         self.ensemble_inputs = self._build_ensemble_inputs()
+        self.rdf_inputs = self._build_rdf_inputs()
 
     def _build_control_inputs(self) -> dict:
         """Create the detailed control parameter widgets, dlinked to the model."""
@@ -152,6 +153,34 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             "ensemble_dpd_order": ensemble_dpd_order,
         }
 
+    def _build_rdf_inputs(self) -> dict:
+        """Create the RDF control widgets, linked to the model.
+
+        The RDF calculation is optional: a checkbox toggles it on or off, and an
+        optional interval (in steps) controls how often data is collected. The
+        interval input is only shown when the calculation is enabled.
+        """
+        style = {"description_width": "180px"}
+        layout = {"width": "320px"}
+
+        calculate = ipw.Checkbox(
+            value=self.model.calculate_rdf,
+            description="Calculate radial distribution functions (RDF)",
+            indent=False,
+        )
+        ipw.link((calculate, "value"), (self.model, "calculate_rdf"))
+        calculate.observe(self._on_rdf_toggle, "value")
+
+        frequency = ipw.IntText(
+            value=self.model.rdf_frequency,
+            description="RDF interval (steps)",
+            style=style,
+            layout=layout,
+        )
+        ipw.link((frequency, "value"), (self.model, "rdf_frequency"))
+
+        return {"calculate_rdf": calculate, "rdf_frequency": frequency}
+
     def render(self):
         """Render the wizard's contents if not already rendered."""
         if self.rendered:
@@ -168,10 +197,29 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             children=[self.control_uploader],
         )
 
+        # The optional RDF interval is grouped with a hint and shown only when
+        # the RDF calculation is enabled.
+        self.rdf_frequency_section = ipw.VBox(
+            children=[
+                self.rdf_inputs["rdf_frequency"],
+                ipw.HTML(
+                    "<i>Optional: leave as 0 to use the DL_POLY default interval.</i>"
+                ),
+            ],
+        )
+        self.rdf_section = ipw.VBox(
+            children=[
+                ipw.HTML("<b>Radial distribution functions</b>"),
+                self.rdf_inputs["calculate_rdf"],
+                self.rdf_frequency_section,
+            ],
+        )
+
         self.detailed_section = ipw.VBox(
             children=[
                 *self.ensemble_inputs.values(),
                 *self.control_inputs.values(),
+                self.rdf_section,
             ],
         )
 
@@ -188,6 +236,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         self.submit_btn.on_click(self.submit_workflow)
 
         self._sync_ensemble_widgets()
+        self._update_rdf_visibility()
         self._update_control_container()
         self._update_children()
         self.rendered = True
@@ -202,6 +251,17 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
     def _on_ensemble_change(self, _) -> None:
         """Repopulate the ensemble method options when the ensemble changes."""
         self._sync_ensemble_widgets()
+        return
+
+    def _on_rdf_toggle(self, _) -> None:
+        """Show or hide the RDF interval input when the toggle changes."""
+        if self.rendered:
+            self._update_rdf_visibility()
+        return
+
+    def _update_rdf_visibility(self) -> None:
+        """Show the RDF interval input only when the calculation is enabled."""
+        self._set_visible(self.rdf_frequency_section, self.model.calculate_rdf)
         return
 
     def _on_ensemble_method_change(self, change) -> None:

@@ -69,14 +69,20 @@ def test_control_units_cover_all_numeric_parameters():
     # every numeric parameter is present in the control dictionary.
     model.ensemble = "NVT"
     model.ensemble_method = "Hoover"
-    # The ensemble type/method are strings and the DPD order is an integer, so
-    # they carry no unit and are excluded from CONTROL_UNITS.
+    # Enable RDF with an explicit interval so ``rdf_frequency`` is present.
+    model.calculate_rdf = True
+    model.rdf_frequency = 20
+    # The ensemble type/method are strings, the DPD order is an integer and the
+    # RDF calculate/print flags are booleans, so they carry no unit and are
+    # excluded from CONTROL_UNITS.
     assert set(model.CONTROL_UNITS) <= set(model.control_parameters)
     numeric_params = set(model.control_parameters) - {
         "ensemble",
         "ensemble_method",
         "ensemble_dpd_order",
         "print_frequency",
+        "rdf_calculate",
+        "rdf_print",
     }
     assert set(model.CONTROL_UNITS) == numeric_params
 
@@ -216,6 +222,48 @@ class TestEnsembleControlParameters:
             0.5,
             "ps",
         )
+
+
+class TestRDF:
+    """Tests for the optional RDF control parameters."""
+
+    def test_defaults(self):
+        """RDF collection is disabled with no interval by default."""
+        model = WorkflowInputModel()
+        assert model.calculate_rdf is False
+        assert model.rdf_frequency == 0
+
+    def test_omitted_when_disabled(self):
+        """No RDF keys are emitted when the calculation is disabled."""
+        model = WorkflowInputModel()
+        model.calculate_rdf = False
+        model.rdf_frequency = 20
+        params = model.control_parameters
+        assert "rdf_calculate" not in params
+        assert "rdf_print" not in params
+        assert "rdf_frequency" not in params
+
+    def test_enabled_emits_calculate_and_print(self):
+        """Enabling RDF emits the calculate and print flags."""
+        model = WorkflowInputModel()
+        model.calculate_rdf = True
+        params = model.control_parameters
+        assert params["rdf_calculate"] is True
+        assert params["rdf_print"] is True
+
+    def test_frequency_omitted_when_zero(self):
+        """A zero interval falls back to the DL_POLY default (not emitted)."""
+        model = WorkflowInputModel()
+        model.calculate_rdf = True
+        model.rdf_frequency = 0
+        assert "rdf_frequency" not in model.control_parameters
+
+    def test_frequency_included_with_unit(self):
+        """A positive interval is emitted as a ``(value, unit)`` pair."""
+        model = WorkflowInputModel()
+        model.calculate_rdf = True
+        model.rdf_frequency = 20
+        assert model.control_parameters["rdf_frequency"] == (20, "steps")
 
 
 class TestHasValidEnsemble:

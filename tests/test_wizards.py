@@ -166,6 +166,87 @@ class TestWorkflowWizardStep:
         assert step.control_inputs["temperature"].value == 300.0
         assert step.control_inputs["time_run"].value == 10000
 
+    def test_units_scheme_defaults_to_default(self):
+        """The units scheme dropdown defaults to the ``default`` scheme."""
+        step = WorkflowWizardStep(WorkflowInputModel())
+        step.render()
+        assert step.units_scheme_input.value == "default"
+        assert step.units_scheme_input.options == ("default", "dpd")
+
+    def test_units_scheme_dlinks_to_model(self):
+        """Selecting a units scheme updates the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+        step.units_scheme_input.value = "dpd"
+        assert model.units_scheme == "dpd"
+
+    def test_units_scheme_at_top_of_detailed_section(self):
+        """The units scheme dropdown is the first detailed control widget."""
+        step = WorkflowWizardStep(WorkflowInputModel())
+        step.render()
+        assert step.detailed_section.children[0] is step.units_scheme_input
+
+    def test_default_scheme_shows_unit_hints(self):
+        """The default scheme keeps the unit hints in the control labels."""
+        step = WorkflowWizardStep(WorkflowInputModel())
+        step.render()
+        assert step.control_inputs["temperature"].description == "Temperature (K)"
+        assert step.control_inputs["timestep"].description == "Timestep (ps)"
+        assert step.control_inputs["cutoff"].description == "Cutoff (ang)"
+
+    def test_dpd_scheme_drops_remapped_unit_hints(self):
+        """Selecting dpd removes the hints for units that are remapped."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.units_scheme_input.value = "dpd"
+
+        assert step.control_inputs["temperature"].description == "Temperature"
+        assert step.control_inputs["timestep"].description == "Timestep"
+        assert step.control_inputs["cutoff"].description == "Cutoff"
+        assert step.control_inputs["padding"].description == "Padding"
+
+    def test_dpd_scheme_keeps_unmapped_unit_hints(self):
+        """Selecting dpd keeps hints for units with no reduced equivalent."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.units_scheme_input.value = "dpd"
+
+        assert step.control_inputs["time_run"].description == "Run time (steps)"
+        assert step.control_inputs["stats_frequency"].description == (
+            "Stats frequency (steps)"
+        )
+
+    def test_dpd_scheme_drops_coupling_unit_hints(self):
+        """Selecting dpd removes the ps hints from the coupling labels."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.units_scheme_input.value = "dpd"
+
+        thermostat = step.ensemble_inputs["ensemble_thermostat_coupling"]
+        barostat = step.ensemble_inputs["ensemble_barostat_coupling"]
+        assert thermostat.description == "Thermostat coupling"
+        assert barostat.description == "Barostat coupling"
+
+    def test_switching_back_to_default_restores_unit_hints(self):
+        """Switching back to the default scheme restores the unit hints."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.units_scheme_input.value = "dpd"
+        step.units_scheme_input.value = "default"
+
+        assert step.control_inputs["temperature"].description == "Temperature (K)"
+        thermostat = step.ensemble_inputs["ensemble_thermostat_coupling"]
+        assert thermostat.description == "Thermostat coupling (ps)"
+
     def test_default_shows_control_file_section(self):
         """By default the control file uploader is shown."""
         step = WorkflowWizardStep(WorkflowInputModel())

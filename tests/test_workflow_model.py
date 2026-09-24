@@ -264,6 +264,66 @@ class TestEnsembleControlParameters:
         )
 
 
+class TestUnitsScheme:
+    """Tests for the units scheme control parameter."""
+
+    def test_default_scheme(self):
+        """The units scheme defaults to ``default``."""
+        model = WorkflowInputModel()
+        assert model.units_scheme == "default"
+
+    def test_default_scheme_uses_physical_units(self):
+        """The default scheme returns the physical units unchanged."""
+        model = WorkflowInputModel()
+        assert model.control_unit("temperature") == "K"
+        assert model.control_unit("timestep") == "ps"
+        assert model.control_unit("cutoff") == "ang"
+        assert model.control_unit("time_run") == "steps"
+
+    def test_dpd_scheme_maps_units(self):
+        """The dpd scheme maps physical units to their reduced equivalents."""
+        model = WorkflowInputModel()
+        model.units_scheme = "dpd"
+        assert model.control_unit("temperature") == "dpd_temp"
+        assert model.control_unit("timestep") == "dpd_t"
+        assert model.control_unit("cutoff") == "dpd_l"
+        assert model.control_unit("padding") == "dpd_l"
+        # Units without a DPD mapping are left unchanged.
+        assert model.control_unit("time_run") == "steps"
+
+    def test_io_units_scheme_omitted_for_default(self):
+        """No io_units_scheme key is emitted for the default scheme."""
+        model = WorkflowInputModel()
+        assert "io_units_scheme" not in model.control_parameters
+
+    def test_io_units_scheme_set_for_dpd(self):
+        """The dpd scheme adds io_units_scheme to the control dictionary."""
+        model = WorkflowInputModel()
+        model.units_scheme = "dpd"
+        assert model.control_parameters["io_units_scheme"] == "dpd"
+
+    def test_dpd_scheme_applies_to_control_parameters(self):
+        """The dpd scheme changes the units of the emitted parameters."""
+        model = WorkflowInputModel()
+        model.units_scheme = "dpd"
+        params = model.control_parameters
+        assert params["temperature"] == (300.0, "dpd_temp")
+        assert params["timestep"] == (0.001, "dpd_t")
+        assert params["cutoff"] == (10.0, "dpd_l")
+        assert params["padding"] == (1.0, "dpd_l")
+        assert params["time_run"] == (10000, "steps")
+
+    def test_dpd_scheme_applies_to_couplings(self):
+        """The dpd scheme maps the thermostat/barostat coupling units too."""
+        model = WorkflowInputModel()
+        model.units_scheme = "dpd"
+        model.ensemble = "NPT"
+        model.ensemble_method = "Hoover"
+        params = model.control_parameters
+        assert params["ensemble_thermostat_coupling"][1] == "dpd_t"
+        assert params["ensemble_barostat_coupling"][1] == "dpd_t"
+
+
 class TestRDF:
     """Tests for the RDF control parameters, driven by ``rdf_frequency``."""
 

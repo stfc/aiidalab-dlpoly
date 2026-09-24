@@ -88,9 +88,26 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         )
         self.detailed_checkbox.observe(self._on_toggle_detailed, "value")
 
+        # Units scheme selector, shown at the top of the detailed parameters.
+        self.units_scheme_input = ipw.Dropdown(
+            options=self.model.UNITS_SCHEMES,
+            value=self.model.units_scheme,
+            description="Units scheme",
+            style={"description_width": "180px"},
+            layout={"width": "320px"},
+        )
+        ipw.link((self.units_scheme_input, "value"), (self.model, "units_scheme"))
+        self.units_scheme_input.observe(self._on_units_scheme_change, "value")
+
+        # Widgets whose description carries a unit hint, tracked as
+        # ``(widget, label, unit)`` so the hint can be refreshed when the units
+        # scheme changes.
+        self._unit_labeled_widgets = []
+
         # Detailed control parameter inputs.
         self.control_inputs = self._build_control_inputs()
         self.ensemble_inputs = self._build_ensemble_inputs()
+        self._update_unit_labels()
 
     def _build_control_inputs(self) -> dict:
         """Create the detailed control parameter widgets, dlinked to the model.
@@ -109,12 +126,13 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             # zero default.
             widget = widget_cls(
                 value=getattr(self.model, trait),
-                description=f"{label} ({unit})",
+                description=self._field_description(label, unit),
                 style={"description_width": "180px"},
                 layout={"width": "320px"},
             )
             ipw.link((widget, "value"), (self.model, trait))
             widgets[trait] = widget
+            self._unit_labeled_widgets.append((widget, label, unit))
             if note:
                 row = ipw.HBox(
                     children=[
@@ -162,7 +180,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
 
         ensemble_thermostat_coupling = ipw.FloatText(
             value=self.model.ensemble_thermostat_coupling,
-            description="Thermostat coupling (ps)",
+            description=self._field_description("Thermostat coupling", "ps"),
             style=style,
             layout=layout,
         )
@@ -170,16 +188,22 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             (ensemble_thermostat_coupling, "value"),
             (self.model, "ensemble_thermostat_coupling"),
         )
+        self._unit_labeled_widgets.append(
+            (ensemble_thermostat_coupling, "Thermostat coupling", "ps")
+        )
 
         ensemble_barostat_coupling = ipw.FloatText(
             value=self.model.ensemble_barostat_coupling,
-            description="Barostat coupling (ps)",
+            description=self._field_description("Barostat coupling", "ps"),
             style=style,
             layout=layout,
         )
         ipw.link(
             (ensemble_barostat_coupling, "value"),
             (self.model, "ensemble_barostat_coupling"),
+        )
+        self._unit_labeled_widgets.append(
+            (ensemble_barostat_coupling, "Barostat coupling", "ps")
         )
 
         ensemble_dpd_order = ipw.Dropdown(
@@ -199,6 +223,28 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             "ensemble_dpd_order": ensemble_dpd_order,
         }
 
+    def _field_description(self, label: str, unit: str) -> str:
+        """Build a widget description, dropping the unit hint under DPD units.
+
+        Under the ``dpd`` units scheme the physical unit hints that are remapped
+        to reduced units (e.g. ``K``, ``ps``, ``ang``) become meaningless, so the
+        hint is omitted; all other hints are kept as ``label (unit)``.
+        """
+        if self.model.units_scheme == "dpd" and unit in self.model.DPD_UNIT_MAP:
+            return label
+        return f"{label} ({unit})"
+
+    def _update_unit_labels(self) -> None:
+        """Refresh the unit hints on every unit-labelled widget."""
+        for widget, label, unit in self._unit_labeled_widgets:
+            widget.description = self._field_description(label, unit)
+        return
+
+    def _on_units_scheme_change(self, _) -> None:
+        """Refresh the unit hints when the units scheme is changed."""
+        self._update_unit_labels()
+        return
+
     def render(self):
         """Render the wizard's contents if not already rendered."""
         if self.rendered:
@@ -217,6 +263,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
 
         self.detailed_section = ipw.VBox(
             children=[
+                self.units_scheme_input,
                 *self.ensemble_inputs.values(),
                 *self.control_rows,
             ],

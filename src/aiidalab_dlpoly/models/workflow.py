@@ -32,6 +32,20 @@ class WorkflowInputModel(tl.HasTraits):
         "traj_interval": "steps",
     }
 
+    # Available units schemes. ``default`` uses the physical units in
+    # ``CONTROL_UNITS``; ``dpd`` switches to reduced DPD units and adds the
+    # ``io_units_scheme`` control key.
+    UNITS_SCHEMES = ("default", "dpd")
+
+    # Mapping from physical units to their reduced DPD equivalents, applied when
+    # the ``dpd`` units scheme is selected. Units not listed (e.g. ``steps``) are
+    # unchanged.
+    DPD_UNIT_MAP = {
+        "K": "dpd_temp",
+        "ps": "dpd_t",
+        "ang": "dpd_l",
+    }
+
     # Trajectory detail level written to the HISTORY file when trajectory
     # writing is enabled (positions and velocities). Not user-configurable.
     HISTORY_TRAJ_KEY = "pos-vel"
@@ -66,6 +80,10 @@ class WorkflowInputModel(tl.HasTraits):
 
     use_detailed_control = tl.Bool(False).tag(sync=True)
     control_file = tl.Instance(SinglefileData, allow_none=True)
+
+    # Units scheme applied to the numeric control parameters. ``dpd`` switches
+    # to reduced DPD units and adds the ``io_units_scheme`` control key.
+    units_scheme = tl.Unicode("default").tag(sync=True)
 
     # Key DL_POLY control parameters (used when use_detailed_control is True).
     temperature = tl.Float(300.0).tag(sync=True)
@@ -146,33 +164,49 @@ class WorkflowInputModel(tl.HasTraits):
             self.ensemble in self.BAROSTAT_ENSEMBLES and self.ensemble_method != "dpd"
         )
 
+    def control_unit(self, parameter: str) -> str:
+        """Return the unit for a control parameter under the active units scheme.
+
+        The physical unit from ``CONTROL_UNITS`` is returned for the ``default``
+        scheme; when the ``dpd`` scheme is selected it is mapped to its reduced
+        DPD equivalent via ``DPD_UNIT_MAP`` (units with no mapping are unchanged).
+        """
+        unit = self.CONTROL_UNITS[parameter]
+        if self.units_scheme == "dpd":
+            return self.DPD_UNIT_MAP.get(unit, unit)
+        return unit
+
     @property
     def control_parameters(self) -> dict:
         """Return the detailed control parameters as a control dictionary.
 
         The format matches the control dictionary consumed by the
         ``aiida-dlpoly`` plugin, where every numeric input is a
-        ``(value, unit)`` pair. The ensemble parameters are added as plain
-        values, with ``ensemble_method`` only included when the ensemble
-        requires one and ``ensemble_dpd_order`` only when the method is ``dpd``.
+        ``(value, unit)`` pair. Units follow the selected units scheme, and the
+        ``io_units_scheme`` key is added when the ``dpd`` scheme is active. The
+        ensemble parameters are added as plain values, with ``ensemble_method``
+        only included when the ensemble requires one and ``ensemble_dpd_order``
+        only when the method is ``dpd``.
         """
         parameters = {
-            "temperature": (self.temperature, self.CONTROL_UNITS["temperature"]),
-            "timestep": (self.timestep, self.CONTROL_UNITS["timestep"]),
-            "time_run": (self.time_run, self.CONTROL_UNITS["time_run"]),
+            "temperature": (self.temperature, self.control_unit("temperature")),
+            "timestep": (self.timestep, self.control_unit("timestep")),
+            "time_run": (self.time_run, self.control_unit("time_run")),
             "time_equilibration": (
                 self.time_equilibration,
-                self.CONTROL_UNITS["time_equilibration"],
+                self.control_unit("time_equilibration"),
             ),
-            "cutoff": (self.cutoff, self.CONTROL_UNITS["cutoff"]),
-            "padding": (self.padding, self.CONTROL_UNITS["padding"]),
+            "cutoff": (self.cutoff, self.control_unit("cutoff")),
+            "padding": (self.padding, self.control_unit("padding")),
             "stats_frequency": (
                 self.stats_frequency,
-                self.CONTROL_UNITS["stats_frequency"],
+                self.control_unit("stats_frequency"),
             ),
             "ensemble": self.ensemble,
             "print_frequency": (1000, "steps"),  # required for older version of DL_POLY
         }
+        if self.units_scheme == "dpd":
+            parameters["io_units_scheme"] = "dpd"
         if self.requires_ensemble_method:
             parameters["ensemble_method"] = self.ensemble_method
         if self.requires_dpd_order:
@@ -180,26 +214,26 @@ class WorkflowInputModel(tl.HasTraits):
         if self.requires_thermostat_coupling:
             parameters["ensemble_thermostat_coupling"] = (
                 self.ensemble_thermostat_coupling,
-                self.CONTROL_UNITS["ensemble_thermostat_coupling"],
+                self.control_unit("ensemble_thermostat_coupling"),
             )
         if self.requires_barostat_coupling:
             parameters["ensemble_barostat_coupling"] = (
                 self.ensemble_barostat_coupling,
-                self.CONTROL_UNITS["ensemble_barostat_coupling"],
+                self.control_unit("ensemble_barostat_coupling"),
             )
         if self.rdf_frequency > 0:
             parameters["rdf_calculate"] = True
             parameters["rdf_print"] = True
             parameters["rdf_frequency"] = (
                 self.rdf_frequency,
-                self.CONTROL_UNITS["rdf_frequency"],
+                self.control_unit("rdf_frequency"),
             )
         if self.history_frequency > 0:
             parameters["traj_calculate"] = True
             parameters["traj_key"] = self.HISTORY_TRAJ_KEY
             parameters["traj_interval"] = (
                 self.history_frequency,
-                self.CONTROL_UNITS["traj_interval"],
+                self.control_unit("traj_interval"),
             )
         return parameters
 

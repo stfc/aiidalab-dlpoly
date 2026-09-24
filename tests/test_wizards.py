@@ -252,6 +252,8 @@ class TestWorkflowWizardStep:
         assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
         coupling = step.ensemble_inputs["ensemble_thermostat_coupling"]
         assert coupling.layout.display == "none"
+        barostat = step.ensemble_inputs["ensemble_barostat_coupling"]
+        assert barostat.layout.display == "none"
 
     def test_thermostat_coupling_dlinks_to_model(self):
         """Editing the thermostat coupling widget updates the model."""
@@ -271,6 +273,60 @@ class TestWorkflowWizardStep:
 
         assert step.ensemble_inputs["ensemble_thermostat_coupling"].layout.display == ""
         assert step.ensemble_inputs["ensemble_dpd_order"].layout.display == "none"
+
+    def test_nvt_hides_barostat_coupling(self):
+        """The barostat coupling is hidden for the volume-fixed NVT ensemble."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NVT"
+
+        assert step.ensemble_inputs["ensemble_barostat_coupling"].layout.display == (
+            "none"
+        )
+
+    def test_selecting_npt_shows_barostat_coupling(self):
+        """Selecting NPT reveals the barostat coupling alongside the thermostat."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NPT"
+
+        assert step.ensemble_inputs["ensemble_barostat_coupling"].layout.display == ""
+        assert step.ensemble_inputs["ensemble_thermostat_coupling"].layout.display == ""
+
+    def test_selecting_nst_shows_barostat_coupling(self):
+        """Selecting NST reveals the barostat coupling."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NST"
+
+        assert step.ensemble_inputs["ensemble_barostat_coupling"].layout.display == ""
+
+    def test_switching_from_npt_hides_barostat_coupling(self):
+        """Switching away from a pressure ensemble hides the barostat coupling."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+
+        step.ensemble_inputs["ensemble"].value = "NPT"
+        step.ensemble_inputs["ensemble"].value = "NVE"
+
+        assert step.ensemble_inputs["ensemble_barostat_coupling"].layout.display == (
+            "none"
+        )
+
+    def test_barostat_coupling_dlinks_to_model(self):
+        """Editing the barostat coupling widget updates the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+        step.ensemble_inputs["ensemble_barostat_coupling"].value = 0.75
+        assert model.ensemble_barostat_coupling == 0.75
 
     def test_dpd_hides_coupling_shows_order(self):
         """The dpd method swaps the coupling widget for the DPD order."""

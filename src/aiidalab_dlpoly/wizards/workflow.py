@@ -171,6 +171,17 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             (self.model, "ensemble_thermostat_coupling"),
         )
 
+        ensemble_barostat_coupling = ipw.FloatText(
+            value=self.model.ensemble_barostat_coupling,
+            description="Barostat coupling (ps)",
+            style=style,
+            layout=layout,
+        )
+        ipw.link(
+            (ensemble_barostat_coupling, "value"),
+            (self.model, "ensemble_barostat_coupling"),
+        )
+
         ensemble_dpd_order = ipw.Dropdown(
             options=self.model.DPD_ORDERS,
             value=self.model.ensemble_dpd_order,
@@ -184,6 +195,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             "ensemble": ensemble,
             "ensemble_method": ensemble_method,
             "ensemble_thermostat_coupling": ensemble_thermostat_coupling,
+            "ensemble_barostat_coupling": ensemble_barostat_coupling,
             "ensemble_dpd_order": ensemble_dpd_order,
         }
 
@@ -268,8 +280,9 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
     def _update_method_dependent_visibility(self) -> None:
         """Toggle the widgets whose relevance depends on the ensemble method.
 
-        The DPD order is shown only for the ``dpd`` method, while the thermostat
-        coupling applies to every other method-requiring ensemble.
+        The DPD order is shown only for the ``dpd`` method, the thermostat
+        coupling applies to every other method-requiring ensemble, and the
+        barostat coupling only to the pressure-controlling NPT/NST ensembles.
         """
         self._set_visible(
             self.ensemble_inputs["ensemble_dpd_order"],
@@ -278,6 +291,10 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         self._set_visible(
             self.ensemble_inputs["ensemble_thermostat_coupling"],
             self.model.requires_thermostat_coupling,
+        )
+        self._set_visible(
+            self.ensemble_inputs["ensemble_barostat_coupling"],
+            self.model.requires_barostat_coupling,
         )
         return
 

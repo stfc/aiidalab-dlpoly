@@ -27,6 +27,7 @@ class WorkflowInputModel(tl.HasTraits):
         "padding": "ang",
         "stats_frequency": "steps",
         "ensemble_thermostat_coupling": "ps",
+        "ensemble_barostat_coupling": "ps",
         "rdf_frequency": "steps",
         "traj_interval": "steps",
     }
@@ -58,6 +59,9 @@ class WorkflowInputModel(tl.HasTraits):
     # Valid DPD orders, required when the ensemble method is ``dpd``.
     DPD_ORDERS = (0, 1, 2)
 
+    # Ensembles that control pressure and therefore require a barostat coupling.
+    BAROSTAT_ENSEMBLES = ("NPT", "NST")
+
     force_field = tl.Instance(SinglefileData, allow_none=True)
 
     use_detailed_control = tl.Bool(False).tag(sync=True)
@@ -79,6 +83,7 @@ class WorkflowInputModel(tl.HasTraits):
     ensemble_method = tl.Unicode("").tag(sync=True)
     ensemble_dpd_order = tl.Int(0).tag(sync=True)
     ensemble_thermostat_coupling = tl.Float(0.1).tag(sync=True)
+    ensemble_barostat_coupling = tl.Float(1.0).tag(sync=True)
 
     # Radial distribution function (RDF) collection. ``rdf_frequency`` is the
     # interval (in steps) at which data is collected and written to ``RDFDAT``;
@@ -131,6 +136,17 @@ class WorkflowInputModel(tl.HasTraits):
         return self.requires_ensemble_method and self.ensemble_method != "dpd"
 
     @property
+    def requires_barostat_coupling(self) -> bool:
+        """True if the ensemble controls pressure and needs a barostat coupling.
+
+        Applies to the NPT/NST ensembles, except when the DPD method is
+        selected (which uses the DPD order instead).
+        """
+        return (
+            self.ensemble in self.BAROSTAT_ENSEMBLES and self.ensemble_method != "dpd"
+        )
+
+    @property
     def control_parameters(self) -> dict:
         """Return the detailed control parameters as a control dictionary.
 
@@ -165,6 +181,11 @@ class WorkflowInputModel(tl.HasTraits):
             parameters["ensemble_thermostat_coupling"] = (
                 self.ensemble_thermostat_coupling,
                 self.CONTROL_UNITS["ensemble_thermostat_coupling"],
+            )
+        if self.requires_barostat_coupling:
+            parameters["ensemble_barostat_coupling"] = (
+                self.ensemble_barostat_coupling,
+                self.CONTROL_UNITS["ensemble_barostat_coupling"],
             )
         if self.rdf_frequency > 0:
             parameters["rdf_calculate"] = True

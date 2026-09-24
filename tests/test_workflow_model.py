@@ -65,9 +65,9 @@ def test_control_parameters_reflect_edits():
 def test_control_units_cover_all_numeric_parameters():
     """Every numeric control parameter has a documented unit."""
     model = WorkflowInputModel()
-    # Use an ensemble configuration that exposes the thermostat coupling so that
-    # every numeric parameter is present in the control dictionary.
-    model.ensemble = "NVT"
+    # Use an ensemble configuration that exposes both the thermostat and barostat
+    # couplings so every numeric parameter is present in the control dictionary.
+    model.ensemble = "NPT"
     model.ensemble_method = "Hoover"
     # Enable RDF and trajectory writing with explicit intervals so
     # ``rdf_frequency`` and ``traj_interval`` are present.
@@ -172,6 +172,25 @@ class TestEnsemble:
         assert model.requires_thermostat_coupling is False
         assert model.requires_dpd_order is True
 
+    def test_barostat_coupling_default(self):
+        """The barostat coupling defaults to 1.0 ps."""
+        model = WorkflowInputModel()
+        assert model.ensemble_barostat_coupling == 1.0
+
+    def test_barostat_coupling_not_required_for_nve_nvt(self):
+        """Ensembles that do not control pressure need no barostat coupling."""
+        model = WorkflowInputModel()
+        for ensemble in ("NVE", "NVT", "PMF"):
+            model.ensemble = ensemble
+            assert model.requires_barostat_coupling is False
+
+    def test_barostat_coupling_required_for_npt_nst(self):
+        """The pressure-controlling NPT/NST ensembles need a barostat coupling."""
+        model = WorkflowInputModel()
+        for ensemble in ("NPT", "NST"):
+            model.ensemble = ensemble
+            assert model.requires_barostat_coupling is True
+
 
 class TestEnsembleControlParameters:
     """Tests for how ensemble parameters appear in the control dictionary."""
@@ -222,6 +241,24 @@ class TestEnsembleControlParameters:
         model.ensemble_method = "Hoover"
         model.ensemble_thermostat_coupling = 0.5
         assert model.control_parameters["ensemble_thermostat_coupling"] == (
+            0.5,
+            "ps",
+        )
+
+    def test_barostat_coupling_omitted_for_non_pressure_ensembles(self):
+        """No barostat coupling is emitted for NVE/NVT/PMF ensembles."""
+        model = WorkflowInputModel()
+        model.ensemble = "NVT"
+        model.ensemble_method = "Hoover"
+        assert "ensemble_barostat_coupling" not in model.control_parameters
+
+    def test_barostat_coupling_included_with_unit(self):
+        """The barostat coupling is emitted as a ``(value, unit)`` pair."""
+        model = WorkflowInputModel()
+        model.ensemble = "NST"
+        model.ensemble_method = "MTK"
+        model.ensemble_barostat_coupling = 0.5
+        assert model.control_parameters["ensemble_barostat_coupling"] == (
             0.5,
             "ps",
         )

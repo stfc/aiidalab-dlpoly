@@ -377,6 +377,20 @@ class TestWorkflowWizardStep:
         step.rdf_inputs["rdf_frequency"].value = 25
         assert model.rdf_frequency == 25
 
+    def test_history_frequency_defaults_to_zero(self):
+        """The history frequency input defaults to 0 (writing disabled)."""
+        step = WorkflowWizardStep(WorkflowInputModel())
+        step.render()
+        assert step.control_inputs["history_frequency"].value == 0
+
+    def test_history_frequency_dlinks_to_model(self):
+        """Editing the history frequency widget updates the model."""
+        model = WorkflowInputModel()
+        step = WorkflowWizardStep(model)
+        step.render()
+        step.control_inputs["history_frequency"].value = 100
+        assert model.history_frequency == 100
+
 
 class TestComputationalResourcesWizardStep:
     """Tests for the computational resources wizard step."""

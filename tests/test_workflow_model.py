@@ -69,12 +69,14 @@ def test_control_units_cover_all_numeric_parameters():
     # every numeric parameter is present in the control dictionary.
     model.ensemble = "NVT"
     model.ensemble_method = "Hoover"
-    # Enable RDF with an explicit interval so ``rdf_frequency`` is present.
+    # Enable RDF and trajectory writing with explicit intervals so
+    # ``rdf_frequency`` and ``traj_interval`` are present.
     model.calculate_rdf = True
     model.rdf_frequency = 20
-    # The ensemble type/method are strings, the DPD order is an integer and the
-    # RDF calculate/print flags are booleans, so they carry no unit and are
-    # excluded from CONTROL_UNITS.
+    model.history_frequency = 50
+    # The ensemble type/method and traj_key are strings, the DPD order is an
+    # integer and the RDF/trajectory flags are booleans, so they carry no unit
+    # and are excluded from CONTROL_UNITS.
     assert set(model.CONTROL_UNITS) <= set(model.control_parameters)
     numeric_params = set(model.control_parameters) - {
         "ensemble",
@@ -83,6 +85,8 @@ def test_control_units_cover_all_numeric_parameters():
         "print_frequency",
         "rdf_calculate",
         "rdf_print",
+        "traj_calculate",
+        "traj_key",
     }
     assert set(model.CONTROL_UNITS) == numeric_params
 
@@ -264,6 +268,38 @@ class TestRDF:
         model.calculate_rdf = True
         model.rdf_frequency = 20
         assert model.control_parameters["rdf_frequency"] == (20, "steps")
+
+
+class TestHistory:
+    """Tests for the trajectory (HISTORY file) control parameters."""
+
+    def test_default_disabled(self):
+        """Trajectory writing is disabled by default (frequency 0)."""
+        model = WorkflowInputModel()
+        assert model.history_frequency == 0
+
+    def test_omitted_when_zero(self):
+        """A zero frequency emits no trajectory keys."""
+        model = WorkflowInputModel()
+        model.history_frequency = 0
+        params = model.control_parameters
+        assert "traj_calculate" not in params
+        assert "traj_key" not in params
+        assert "traj_interval" not in params
+
+    def test_positive_frequency_enables_writing(self):
+        """A positive frequency turns on trajectory writing at that interval."""
+        model = WorkflowInputModel()
+        model.history_frequency = 50
+        params = model.control_parameters
+        assert params["traj_calculate"] is True
+        assert params["traj_interval"] == (50, "steps")
+
+    def test_traj_key_defaults_to_pos_vel(self):
+        """The trajectory detail level defaults to positions and velocities."""
+        model = WorkflowInputModel()
+        model.history_frequency = 50
+        assert model.control_parameters["traj_key"] == "pos-vel"
 
 
 class TestHasValidEnsemble:

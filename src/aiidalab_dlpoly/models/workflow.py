@@ -28,7 +28,12 @@ class WorkflowInputModel(tl.HasTraits):
         "stats_frequency": "steps",
         "ensemble_thermostat_coupling": "ps",
         "rdf_frequency": "steps",
+        "traj_interval": "steps",
     }
+
+    # Trajectory detail level written to the HISTORY file when trajectory
+    # writing is enabled (positions and velocities). Not user-configurable.
+    HISTORY_TRAJ_KEY = "pos-vel"
 
     # Valid ensemble types accepted by DL_POLY.
     ENSEMBLES = ("NVE", "NVT", "NPT", "NST", "PMF")
@@ -81,6 +86,11 @@ class WorkflowInputModel(tl.HasTraits):
     # the DL_POLY default interval is used.
     calculate_rdf = tl.Bool(False).tag(sync=True)
     rdf_frequency = tl.Int(0).tag(sync=True)
+
+    # Trajectory (HISTORY file) writing. ``history_frequency`` is the interval
+    # (in steps) at which frames are written; 0 disables trajectory writing
+    # entirely.
+    history_frequency = tl.Int(0).tag(sync=True)
 
     submitted = tl.Bool(False).tag(sync=True)
 
@@ -169,6 +179,13 @@ class WorkflowInputModel(tl.HasTraits):
                     self.rdf_frequency,
                     self.CONTROL_UNITS["rdf_frequency"],
                 )
+        if self.history_frequency > 0:
+            parameters["traj_calculate"] = True
+            parameters["traj_key"] = self.HISTORY_TRAJ_KEY
+            parameters["traj_interval"] = (
+                self.history_frequency,
+                self.CONTROL_UNITS["traj_interval"],
+            )
         return parameters
 
     @property

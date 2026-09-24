@@ -17,15 +17,23 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
     control checkbox is ticked, a set of key control parameters.
     """
 
-    # Detailed control fields: (model trait, label, unit, integer?).
+    # Detailed control fields: (model trait, label, unit, integer?, note).
+    # The optional note is rendered to the right of the input field.
     CONTROL_FIELDS = (
-        ("temperature", "Temperature", "K", False),
-        ("timestep", "Timestep", "ps", False),
-        ("time_run", "Run time", "steps", True),
-        ("time_equilibration", "Equilibration time", "steps", True),
-        ("cutoff", "Cutoff", "ang", False),
-        ("padding", "Padding", "ang", False),
-        ("stats_frequency", "Stats frequency", "steps", True),
+        ("temperature", "Temperature", "K", False, ""),
+        ("timestep", "Timestep", "ps", False, ""),
+        ("time_run", "Run time", "steps", True, ""),
+        ("time_equilibration", "Equilibration time", "steps", True, ""),
+        ("cutoff", "Cutoff", "ang", False, ""),
+        ("padding", "Padding", "ang", False, ""),
+        ("stats_frequency", "Stats frequency", "steps", True, ""),
+        (
+            "history_frequency",
+            "History frequency",
+            "steps",
+            True,
+            "Set to 0 to turn off HISTORY file writing.",
+        ),
     )
 
     def __init__(self, model: WorkflowInputModel, **kwargs):
@@ -79,9 +87,16 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         self.rdf_inputs = self._build_rdf_inputs()
 
     def _build_control_inputs(self) -> dict:
-        """Create the detailed control parameter widgets, dlinked to the model."""
+        """Create the detailed control parameter widgets, dlinked to the model.
+
+        Each field is laid out as a row containing the input widget and, when a
+        note is provided, an explanatory note to the right. The rows are stored
+        on ``self.control_rows`` for layout while the input widgets themselves
+        are returned keyed by trait.
+        """
         widgets = {}
-        for trait, label, unit, is_int in self.CONTROL_FIELDS:
+        self.control_rows = []
+        for trait, label, unit, is_int, note in self.CONTROL_FIELDS:
             widget_cls = ipw.IntText if is_int else ipw.FloatText
             # Seed the widget from the model default before linking so the
             # bidirectional link does not overwrite the model with the widget's
@@ -94,6 +109,19 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
             )
             ipw.link((widget, "value"), (self.model, trait))
             widgets[trait] = widget
+            if note:
+                row = ipw.HBox(
+                    children=[
+                        widget,
+                        ipw.HTML(
+                            f"<i>{note}</i>",
+                            layout={"margin": "auto 0 auto 10px"},
+                        ),
+                    ],
+                )
+            else:
+                row = widget
+            self.control_rows.append(row)
         return widgets
 
     def _build_ensemble_inputs(self) -> dict:
@@ -218,7 +246,7 @@ class WorkflowWizardStep(ipw.VBox, WizardAppWidgetStep):
         self.detailed_section = ipw.VBox(
             children=[
                 *self.ensemble_inputs.values(),
-                *self.control_inputs.values(),
+                *self.control_rows,
                 self.rdf_section,
             ],
         )

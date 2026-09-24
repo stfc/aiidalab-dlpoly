@@ -80,11 +80,9 @@ class WorkflowInputModel(tl.HasTraits):
     ensemble_dpd_order = tl.Int(0).tag(sync=True)
     ensemble_thermostat_coupling = tl.Float(0.1).tag(sync=True)
 
-    # Radial distribution function (RDF) collection. When ``calculate_rdf`` is
-    # enabled the RDF is computed and written to ``RDFDAT``; ``rdf_frequency`` is
-    # the optional interval (in steps) at which data is collected, with 0 meaning
-    # the DL_POLY default interval is used.
-    calculate_rdf = tl.Bool(False).tag(sync=True)
+    # Radial distribution function (RDF) collection. ``rdf_frequency`` is the
+    # interval (in steps) at which data is collected and written to ``RDFDAT``;
+    # 0 disables RDF collection entirely.
     rdf_frequency = tl.Int(0).tag(sync=True)
 
     # Trajectory (HISTORY file) writing. ``history_frequency`` is the interval
@@ -168,17 +166,13 @@ class WorkflowInputModel(tl.HasTraits):
                 self.ensemble_thermostat_coupling,
                 self.CONTROL_UNITS["ensemble_thermostat_coupling"],
             )
-        if self.calculate_rdf:
-            # ``rdf_print`` is required to write the RDFDAT file the plugin
-            # retrieves; ``rdf_frequency`` is optional (0 uses the DL_POLY
-            # default interval).
+        if self.rdf_frequency > 0:
             parameters["rdf_calculate"] = True
             parameters["rdf_print"] = True
-            if self.rdf_frequency > 0:
-                parameters["rdf_frequency"] = (
-                    self.rdf_frequency,
-                    self.CONTROL_UNITS["rdf_frequency"],
-                )
+            parameters["rdf_frequency"] = (
+                self.rdf_frequency,
+                self.CONTROL_UNITS["rdf_frequency"],
+            )
         if self.history_frequency > 0:
             parameters["traj_calculate"] = True
             parameters["traj_key"] = self.HISTORY_TRAJ_KEY

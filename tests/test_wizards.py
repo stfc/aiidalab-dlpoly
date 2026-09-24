@@ -337,44 +337,18 @@ class TestWorkflowWizardStep:
         assert model.ensemble_method == ""
         assert step.ensemble_inputs["ensemble_method"].layout.display == "none"
 
-    def test_rdf_hidden_by_default(self):
-        """The RDF interval input is hidden until the calculation is enabled."""
+    def test_rdf_frequency_defaults_to_zero(self):
+        """The RDF frequency input defaults to 0 (collection disabled)."""
         step = WorkflowWizardStep(WorkflowInputModel())
         step.render()
-        assert step.rdf_inputs["calculate_rdf"].value is False
-        assert step.rdf_frequency_section.layout.display == "none"
-
-    def test_rdf_checkbox_dlinks_to_model(self):
-        """Toggling the RDF checkbox propagates to the model."""
-        model = WorkflowInputModel()
-        step = WorkflowWizardStep(model)
-        step.render()
-        step.rdf_inputs["calculate_rdf"].value = True
-        assert model.calculate_rdf is True
-
-    def test_enabling_rdf_shows_interval(self):
-        """Enabling the RDF calculation reveals the interval input."""
-        model = WorkflowInputModel()
-        step = WorkflowWizardStep(model)
-        step.render()
-        step.rdf_inputs["calculate_rdf"].value = True
-        assert step.rdf_frequency_section.layout.display == ""
-
-    def test_disabling_rdf_hides_interval(self):
-        """Disabling the RDF calculation hides the interval input again."""
-        model = WorkflowInputModel()
-        step = WorkflowWizardStep(model)
-        step.render()
-        step.rdf_inputs["calculate_rdf"].value = True
-        step.rdf_inputs["calculate_rdf"].value = False
-        assert step.rdf_frequency_section.layout.display == "none"
+        assert step.control_inputs["rdf_frequency"].value == 0
 
     def test_rdf_frequency_dlinks_to_model(self):
-        """Editing the RDF interval widget updates the model."""
+        """Editing the RDF frequency widget updates the model."""
         model = WorkflowInputModel()
         step = WorkflowWizardStep(model)
         step.render()
-        step.rdf_inputs["rdf_frequency"].value = 25
+        step.control_inputs["rdf_frequency"].value = 25
         assert model.rdf_frequency == 25
 
     def test_history_frequency_defaults_to_zero(self):
